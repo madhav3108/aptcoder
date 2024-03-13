@@ -1,29 +1,33 @@
 <template>
-  <div class="container" style="max-width: 600px">
-    <!-- Heading -->
-    <h2 class="text-center mt-5">My Vue Todo App</h2>
+  <div class="container">
+   
+    
+    <div class="d-flex justify-content-between align-items-center mt-5">
+      <button class="btn btn-danger rounded-pill px-4" @click="deleteLocalStorage">Delete from Local Storage</button>
+      <h2 class="text-center text-danger">Vue To-do List App</h2>
+    </div>
 
-    <!-- Input -->
-    <div class="d-flex mt-5">
+   
+    <div class="input-group mt-4">
       <input
         type="text"
         v-model="task"
-        placeholder="Enter task"
-        class="w-100 form-control"
+        placeholder="Enter a task"
+        class="form-control"
       />
-      <button class="btn btn-warning rounded-0" @click="submitTask">
-        SUBMIT
-      </button>
+      <div class="input-group-append">
+        <button class="btn btn-success rounded-pill px-6 mr-2" @click="submitTask">ADD</button>
+      </div>
     </div>
 
-    <!-- Task table -->
-    <table class="table table-bordered mt-5">
+   
+    <table class="table table-striped mt-4">
       <thead>
         <tr>
           <th scope="col">Task</th>
-          <th scope="col" style="width: 120px">Status</th>
-          <th scope="col" class="text-center">#</th>
-          <th scope="col" class="text-center">#</th>
+          <th scope="col" style="width: 100px">Status</th>
+          <th scope="col" style="width: 150px">Created At</th>
+          <th scope="col" class="text-center">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -35,25 +39,26 @@
           </td>
           <td>
             <span
-              class="pointer noselect"
-              @click="changeStatus(index)"
+              class="badge"
               :class="{
-                'text-danger': task.status === 'to-do',
-                'text-success': task.status === 'finished',
-                'text-warning': task.status === 'in-progress',
+                'badge-danger': task.status === 'to-do',
+                'badge-warning': task.status === 'in-progress',
+                'badge-success': task.status === 'finished',
               }"
+              @click="changeStatus(index)"
             >
               {{ capitalizeFirstChar(task.status) }}
             </span>
           </td>
+          <td>{{ task.created_at }}</td>
           <td class="text-center">
-            <div @click="deleteTask(index)">
-              <span class="fa fa-trash pointer"></span>
-            </div>
-          </td>
-          <td class="text-center">
-            <div @click="editTask(index)">
-              <p class="fa fa-pen pointer"></p>
+            <div>
+              <button class="btn btn-danger btn-sm rounded-pill" @click="deleteTask(index)">
+                Delete
+              </button>
+              <button class="btn btn-info btn-sm ml-2 rounded-pill" @click="editTask(index)">
+                Edit
+              </button>
             </div>
           </td>
         </tr>
@@ -64,105 +69,108 @@
 
 <script>
 export default {
-  name: "HelloWorld",
-  props: {
-    msg: String,
-  },
-
+  name: "TodoApp",
   data() {
     return {
       task: "",
       editedTask: null,
       statuses: ["to-do", "in-progress", "finished"],
-
-      /* Status could be: 'to-do' / 'in-progress' / 'finished' */
-      tasks: [
-        {
-          name: "Steal bananas from the supermarket.",
-          status: "to-do",
-        },
-        {
-          name: "Eat 1 kg chocolate in 1 hour.",
-          status: "in-progress",
-        },
-        {
-          name: "Create YouTube video.",
-          status: "finished",
-        },
-      ],
+      tasks: [],
     };
   },
-
+  created() {
+    this.loadTasks();
+  },
   methods: {
-    /**
-     * Capitalize first character
-     */
     capitalizeFirstChar(str) {
       return str.charAt(0).toUpperCase() + str.slice(1);
     },
-
-    /**
-     * Change status of task by index
-     */
     changeStatus(index) {
       let newIndex = this.statuses.indexOf(this.tasks[index].status);
-      if (++newIndex > 2) newIndex = 0;
+      newIndex = (newIndex + 1) % 3;
       this.tasks[index].status = this.statuses[newIndex];
+      this.saveTasks();
     },
-
-    /**
-     * Deletes task by index
-     */
     deleteTask(index) {
       this.tasks.splice(index, 1);
+      this.saveTasks();
     },
-
-    /**
-     * Edit task
-     */
     editTask(index) {
       this.task = this.tasks[index].name;
       this.editedTask = index;
     },
-
-    /**
-     * Add / Update task
-     */
     submitTask() {
       if (this.task.length === 0) return;
 
-      /* We need to update the task */
-      if (this.editedTask != null) {
+      if (this.editedTask !== null) {
         this.tasks[this.editedTask].name = this.task;
         this.editedTask = null;
       } else {
-        /* We need to add new task */
         this.tasks.push({
           name: this.task,
-          status: "todo",
+          status: "to-do",
+          created_at: new Date().toLocaleString(),
         });
       }
 
       this.task = "";
+      this.saveTasks();
+    },
+    loadTasks() {
+      const savedTasks = localStorage.getItem("tasks");
+      if (savedTasks) {
+        this.tasks = JSON.parse(savedTasks);
+      }
+    },
+    saveTasks() {
+      localStorage.setItem("tasks", JSON.stringify(this.tasks));
+    },
+    deleteLocalStorage() {
+      localStorage.removeItem("tasks");
+      this.tasks = []; // Clear tasks array in memory
     },
   },
 };
 </script>
 
-<style scoped>
-.pointer {
-  cursor: pointer;
-}
-.noselect {
-  -webkit-touch-callout: none; /* iOS Safari */
-  -webkit-user-select: none; /* Safari */
-  -khtml-user-select: none; /* Konqueror HTML */
-  -moz-user-select: none; /* Old versions of Firefox */
-  -ms-user-select: none; /* Internet Explorer/Edge */
-  user-select: none; /* Non-prefixed version, currently
-                                  supported by Chrome, Edge, Opera and Firefox */
-}
+<style>
 .line-through {
   text-decoration: line-through;
+}
+
+.badge {
+  cursor: pointer;
+}
+
+.input-group-append button {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+input[type="text"] {
+  border-radius: 0;
+}
+
+.btn-danger,
+.btn-info {
+  border-radius: 20px;
+}
+
+.btn-danger:hover,
+.btn-info:hover {
+  transform: translateY(-2px);
+}
+
+.btn-danger:focus,
+.btn-info:focus {
+  outline: none;
+}
+
+.btn-success {
+  border-radius: 20px;
+}
+
+.btn-success:hover {
+  transform: translateY(-2px);
 }
 </style>
